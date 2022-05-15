@@ -1,10 +1,10 @@
 use edit_distance::edit_distance;
 use serde::Deserialize;
 use std::ffi::OsStr;
-use std::fs;
 use std::path::PathBuf;
 use std::sync::{mpsc, Mutex};
 use std::time::Duration;
+use std::{f32, fs};
 use std::{
     io::{self, Write},
     process::Command,
@@ -53,7 +53,7 @@ fn main() {
         std::panic::set_hook(Box::new(|_| {
             println!(
                 "read or write operation failed\n\n\
-                      maybe an anti-virus is preving uelau from accessing files on this computer \
+                      maybe an anti-virus is preving uelaur from accessing files on this computer \
                       or the windows blocked access to current folder\n\n\
                       temporarily disable your anti-virus or if you ran the program \
                       inside a protected folder like 'Documents', 'Pictures', 'Videos', 'Music', \
@@ -73,12 +73,12 @@ fn main() {
         std::panic::set_hook(Box::new(|_| {
             println!(
                 "read or write operation failed\n\n\
-                      maybe an anti-virus is preving uelau from accessing files on this mac \
+                      maybe an anti-virus is preving uelaur from accessing files on this mac \
                       or the the current user doesn't have read and write permission in \
                       the current directory\n\n\
                       temporarily disable your anti-virus or if you ran the program \
                       inside a directory that you don't have read and write permission in then \
-                      make a new directory and run uelau there"
+                      make a new directory and run uelaur there"
             );
             thread::sleep(LONG_DUR);
         }));
@@ -95,26 +95,26 @@ fn main() {
         return;
     }
 
-    if entries.contains(&"./uelau_config.txt".into()) {
-        let fs = fs::read("uelau_config.txt").unwrap();
+    if entries.contains(&"./uelaur_config.txt".into()) {
+        let fs = fs::read("uelaur_config.txt").unwrap();
         let file = std::str::from_utf8(&fs).unwrap();
         config = match toml::from_str(file) {
             Ok(c) => c,
             Err(_) => {
                 if entries.contains(&"./config_backup.txt".into()) {
-                    fs::write("./uelau_config.txt", gen_helper_config(file.to_owned())).unwrap();
+                    fs::write("./uelaur_config.txt", gen_helper_config(file.to_owned())).unwrap();
                     println!(
-                        "uelau_config.txt file could not be parsed, please fix \
+                        "uelaur_config.txt file could not be parsed, please fix \
                              all errors first, if you need help you send an email to \
                              Ahmed_Alaa_Gomaa@outlook.com"
                     );
                 } else {
                     fs::write("./config_backup.txt", file).unwrap();
-                    fs::write("./uelau_config.txt", gen_helper_config(file.to_owned())).unwrap();
+                    fs::write("./uelaur_config.txt", gen_helper_config(file.to_owned())).unwrap();
                     println!(
-                        "uelau_config.txt file could not be parsed,\n\
-                             uelau_config.txt was renamed to config_backup.txt\n\
-                             and a new uelau_config.txt was created \
+                        "uelaur_config.txt file could not be parsed,\n\
+                             uelaur_config.txt was renamed to config_backup.txt\n\
+                             and a new uelaur_config.txt was created \
                              containing more information about the errors"
                     );
                 }
@@ -140,8 +140,8 @@ fn main() {
         }
     } else {
         println!(
-            "uelau must be run in an empty folder\nCreate a new folder \
-                 then move uelau there then run it to create a new project"
+            "uelaur must be run in an empty folder\nCreate a new folder \
+                 then move uelaur there then run it to create a new project"
         );
         thread::sleep(MEDIUM_DUR);
         return;
@@ -161,7 +161,7 @@ fn main() {
         return;
     }
 
-    let (tans, recv) = sync::mpsc::channel::<Action>();
+    let (trans, recv) = sync::mpsc::channel::<Action>();
     let (finish, thread_done) = sync::mpsc::channel::<u8>();
 
     if get_pdf_path(entries.to_owned()).is_none() {
@@ -170,23 +170,26 @@ fn main() {
         return;
     }
 
-    let panic_tans = Mutex::new(tans.clone());
+    let panic_trans = Mutex::new(trans.clone());
     let ui_done = Mutex::new(thread_done);
     if cfg!(target_os = "windows") {
         std::panic::set_hook(Box::new(move |info| {
-            let panic_tans = panic_tans.lock().unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Fail("an unexpected error occurred")))
-                .unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Warn(
-                    "this window will close in 2 minutes\n\
-                                                      please copy the following error message and \
-                                                      send it \
-                                                      Ahmed_Alaa_Gomaa@outlook.com",
+            let panic_trans = panic_trans.lock().unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Fail(
+                    "an unexpected error occurred".to_owned(),
                 )))
                 .unwrap();
-            panic_tans.send(Action::Panic).unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Warn(
+                    "this window will close in 2 minutes\n\
+                                                      please copy the following debug message \
+                                                      and send it to \
+                                                      Ahmed_Alaa_Gomaa@outlook.com"
+                        .to_owned(),
+                )))
+                .unwrap();
+            panic_trans.send(Action::Panic).unwrap();
             ui_done.lock().unwrap().recv().unwrap();
             default_panic(info);
             thread::sleep(LONG_DUR);
@@ -194,19 +197,22 @@ fn main() {
         }));
     } else if cfg!(target_os = "linux") {
         std::panic::set_hook(Box::new(move |info| {
-            let panic_tans = panic_tans.lock().unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Fail("an unexpected error occurred")))
-                .unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Warn(
-                    "the process will terminate in 15 seconds\n\
-                                                      please copy the following error message and \
-                                                      send it \
-                                                      Ahmed_Alaa_Gomaa@outlook.com",
+            let panic_trans = panic_trans.lock().unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Fail(
+                    "an unexpected error occurred".to_owned(),
                 )))
                 .unwrap();
-            panic_tans.send(Action::Panic).unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Warn(
+                    "the process will terminate in 15 seconds\n\
+                                                      please copy the following debug message \
+                                                      and send it to \
+                                                      Ahmed_Alaa_Gomaa@outlook.com"
+                        .to_owned(),
+                )))
+                .unwrap();
+            panic_trans.send(Action::Panic).unwrap();
             ui_done.lock().unwrap().recv().unwrap();
             default_panic(info);
             thread::sleep(LONG_DUR);
@@ -214,19 +220,22 @@ fn main() {
         }));
     } else if cfg!(target_os = "macos") {
         std::panic::set_hook(Box::new(move |info| {
-            let panic_tans = panic_tans.lock().unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Fail("an unexpected error occurred")))
-                .unwrap();
-            panic_tans
-                .send(Action::Msg(Message::Warn(
-                    "the process will terminate in 30 seconds\n\
-                                                      please copy the following error message and \
-                                                      send it \
-                                                      Ahmed_Alaa_Gomaa@outlook.com",
+            let panic_trans = panic_trans.lock().unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Fail(
+                    "an unexpected error occurred".to_owned(),
                 )))
                 .unwrap();
-            panic_tans.send(Action::Panic).unwrap();
+            panic_trans
+                .send(Action::Msg(Message::Warn(
+                    "the process will terminate in 30 seconds\n\
+                                                      please copy the following debug message \
+                                                      and send it to \
+                                                      Ahmed_Alaa_Gomaa@outlook.com"
+                        .to_owned(),
+                )))
+                .unwrap();
+            panic_trans.send(Action::Panic).unwrap();
             ui_done.lock().unwrap().recv().unwrap();
             default_panic(info);
             thread::sleep(LONG_DUR);
@@ -236,28 +245,47 @@ fn main() {
 
     let handle = init_ui(recv, finish);
 
-    if entries.contains(&"./patched.pdf".into()) {
+    if entries.contains(&"./uel_pdf.patched".into()) {
         expand2().unwrap();
-        tans.send(Action::Msg(Message::Succ("found patched.pdf")))
+        trans
+            .send(Action::Msg(Message::Succ(
+                "found uel_pdf.patched".to_owned(),
+            )))
             .unwrap();
     } else if let Some(pdf_path) = get_pdf_path(entries) {
         expand2().unwrap();
-        tans.send(Action::Update("patching pdf")).unwrap();
+        trans
+            .send(Action::Update("patching pdf".to_owned()))
+            .unwrap();
         patch_pdf(&pdf_path).unwrap();
-        tans.send(Action::Msg(Message::Succ("created patched.pdf")))
+        trans
+            .send(Action::Msg(Message::Succ(
+                "created uel_pdf.patched".to_owned(),
+            )))
             .unwrap();
     }
 
-    tans.send(Action::Update("updating config options"))
+    trans
+        .send(Action::Update("updating config options".to_owned()))
         .unwrap();
     update_config(&mut config);
-    tans.send(Action::Msg(Message::Succ("all config options valid")))
+    trans
+        .send(Action::Msg(Message::Succ(
+            "all config options valid".to_owned(),
+        )))
         .unwrap();
 
-    tans.send(Action::Update("collecting csv file data"))
+    trans
+        .send(Action::Update("collecting csv file data".to_owned()))
         .unwrap();
+
+    let mut csv_errors = vec![];
     let mut all_csv_data = vec![];
     for csv_file in csv_files {
+        let file_name = csv_file.to_str().unwrap().to_owned();
+        trans
+            .send(Action::Update(format!("serializing {}", file_name)))
+            .unwrap();
         let mut path = std::path::PathBuf::from("uel_papers");
         let mut dir = csv_file.clone();
         dir.set_extension("");
@@ -265,13 +293,116 @@ fn main() {
         if fs::read_dir(&path).is_err() {
             fs::create_dir(&path).unwrap();
         }
-        let data: Vec<Data> = get_all_records(csv_file, &config);
-        all_csv_data.push((path, data));
-    }
-    tans.send(Action::Msg(Message::Succ("collected csv data")))
-        .unwrap();
 
-    tans.send(Action::Update("creating uel papers")).unwrap();
+        match get_all_records(csv_file, &config) {
+            Ok((data, err)) => {
+                match err.len() {
+                    0 => {
+                        trans
+                            .send(Action::Msg(Message::Succ(format!(
+                                "serialization of {} complete, not errors to report",
+                                file_name,
+                            ))))
+                            .unwrap();
+                    }
+
+                    1 => {
+                        trans
+                            .send(Action::Msg(Message::Warn(format!(
+                                "serialization of {} complete, 1 error occured",
+                                file_name,
+                            ))))
+                            .unwrap();
+                        trans
+                            .send(Action::Msg(Message::Warn("continuing anyway".to_owned())))
+                            .unwrap();
+                        csv_errors.push((file_name, err));
+                    }
+
+                    _ => {
+                        trans
+                            .send(Action::Msg(Message::Warn(format!(
+                                "serialization of {} complete, {} errors occured",
+                                file_name,
+                                err.len()
+                            ))))
+                            .unwrap();
+                        trans
+                            .send(Action::Msg(Message::Warn("continuing anyway".to_owned())))
+                            .unwrap();
+                        csv_errors.push((file_name, err));
+                    }
+                }
+
+                all_csv_data.push((path, data));
+            }
+            Err(err) => {
+                trans
+                    .send(Action::Msg(Message::Fatal(
+                        "failed to parse full_mark, \
+                                                 file can't be serialized"
+                            .to_owned(),
+                    )))
+                    .unwrap();
+                trans
+                    .send(Action::Msg(Message::Warn(format!(
+                        "skipping {}",
+                        file_name
+                    ))))
+                    .unwrap();
+                csv_errors.push((file_name, vec![err]));
+            }
+        };
+    }
+
+    if !csv_errors.is_empty() {
+        let mut csv_errors_content = "".to_owned();
+
+        for (csv_file_name, errors_vec) in csv_errors {
+            let mut s = ' ';
+            if errors_vec.len() > 1 {
+                s = 's';
+            }
+            csv_errors_content.push_str(&format!(
+                "\nIn: {}, found {} error{}\n",
+                csv_file_name,
+                errors_vec.len(),
+                s
+            ));
+            for err in errors_vec {
+                csv_errors_content.push_str(&format!("\n{}", err));
+            }
+
+            csv_errors_content.push('\n');
+        }
+
+        fs::write("./CSV_ERRORS.txt", csv_errors_content).unwrap();
+    }
+
+    if !all_csv_data.is_empty() {
+        trans
+            .send(Action::Msg(Message::Succ("collected csv data".to_owned())))
+            .unwrap();
+    } else {
+        trans
+            .send(Action::Msg(Message::Fatal(
+                "All csv files invalid".to_owned(),
+            )))
+            .unwrap();
+        trans
+            .send(Action::Msg(Message::Warn(
+                "nothing to do\nexiting soon".to_owned(),
+            )))
+            .unwrap();
+        trans.send(Action::Panic).unwrap();
+        handle.join().unwrap();
+        thread::sleep(MEDIUM_DUR);
+        return;
+    }
+
+    trans
+        .send(Action::Update("creating uel papers".to_owned()))
+        .unwrap();
     for (path, data) in all_csv_data {
         for arguments in gen_leafedit_operations(path, &config, data) {
             if cfg!(target_os = "windows") {
@@ -284,10 +415,15 @@ fn main() {
             }
         }
     }
-    tans.send(Action::Msg(Message::Succ("all uel pdfs created")))
+    trans
+        .send(Action::Msg(Message::Succ(
+            "all uel pdfs created".to_owned(),
+        )))
         .unwrap();
 
-    tans.send(Action::Update("merging pdfs")).unwrap();
+    trans
+        .send(Action::Update("merging pdfs".to_owned()))
+        .unwrap();
     for pdf_dir in ls("./uel_papers") {
         let all_pdfs = ls(pdf_dir.to_str().unwrap());
         if !all_pdfs.is_empty() {
@@ -311,15 +447,17 @@ fn main() {
             }
         }
     }
-    tans.send(Action::Msg(Message::Succ(
-        "merged pdf and placed them in review \
+    trans
+        .send(Action::Msg(Message::Succ(
+            "merged pdf and placed them in review \
                                         folder for easy reviewing\n\
                                         please make sure all the information in the pdfs \
-                                        is correct before sending them",
-    )))
-    .unwrap();
+                                        is correct before sending them"
+                .to_owned(),
+        )))
+        .unwrap();
 
-    tans.send(Action::Quit).unwrap();
+    trans.send(Action::Quit).unwrap();
     handle.join().unwrap();
     thread::sleep(SHORT_DUR);
 }
@@ -346,7 +484,7 @@ fn gen_leafedit_operations(dir: PathBuf, config: &Config, data: Vec<Data>) -> Ve
             format!("{:.1}/{}", mark, full_mark as u64)
         };
 
-        let asu_mark = (mark / full_mark) * 100_f32;
+        let asu_mark = ((mark / full_mark) * 100_f32).clamp(0_f32, 100_f32);
         let horizontal_index = get_horizontal_mark_index(&config.horizontal_marks, asu_mark);
         let vertical_index = get_vertical_mark_index(&config.vertical_marks, asu_mark);
         let uel_mark = get_uel_mark(&config.vertical_marks, asu_mark, vertical_index);
@@ -414,7 +552,7 @@ fn gen_leafedit_operations(dir: PathBuf, config: &Config, data: Vec<Data>) -> Ve
                 config.vertical_postions[vertical_index][1],
                 config.vertical_feild_font_size
             ),
-            "patched.pdf".to_string(),
+            "uel_pdf.patched".to_string(),
             file_name.to_str().unwrap().to_string(),
         ])
     }
@@ -422,18 +560,18 @@ fn gen_leafedit_operations(dir: PathBuf, config: &Config, data: Vec<Data>) -> Ve
 }
 
 fn get_uel_mark(vertical_marks: &[[usize; 2]], mark: f32, index: usize) -> f32 {
-    let (asu_less, uel_less) = if index == 0 {
+    let (uel_less, asu_less) = if index == vertical_marks.len() - 1 {
         (0_f32, 0_f32)
     } else {
         (
-            vertical_marks[index - 1][1] as f32,
-            vertical_marks[index - 1][0] as f32,
+            vertical_marks[index + 1][0] as f32,
+            vertical_marks[index + 1][1] as f32,
         )
     };
 
-    let (asu, uel) = (
-        vertical_marks[index][1] as f32,
+    let (uel, asu) = (
         vertical_marks[index][0] as f32,
+        vertical_marks[index][1] as f32,
     );
 
     ((mark - asu_less) / (asu - asu_less)) * (uel - uel_less) + uel_less
@@ -461,7 +599,9 @@ fn get_horizontal_mark_index(horizontal_marks: &[usize], mark: f32) -> usize {
     index
 }
 
-fn get_all_records(csv: PathBuf, config: &Config) -> Vec<(String, String, f32, f32)> {
+fn get_all_records(csv: PathBuf, config: &Config) -> Result<(Vec<Data>, Vec<String>), String> {
+    let mut errors = vec![];
+
     let mut csv_reader = csv::ReaderBuilder::new()
         .flexible(true)
         .from_path(&csv)
@@ -469,30 +609,61 @@ fn get_all_records(csv: PathBuf, config: &Config) -> Vec<(String, String, f32, f
 
     let mut vec = vec![];
     let mut full_mark = None;
-    for record in csv_reader.records() {
-        let record = record.unwrap();
-        if full_mark.is_none() {
-            let temp = record.get(config.final_mark_column).unwrap_or("100.00");
-            full_mark = Some(
-                temp.parse::<f32>()
-                    .unwrap_or_else(|_| temp.parse::<u16>().unwrap() as f32),
-            );
-        }
+    for (i, record) in csv_reader.records().enumerate() {
+        match record {
+            Ok(record) => {
+                if full_mark.is_none() {
+                    match record.get(config.final_mark_column) {
+                        Some(temp) => {
+                            full_mark = match temp.parse::<f32>() {
+                                Ok(n) => Some(n),
+                                Err(_) => {
+                                    if let Ok(n) = temp.parse::<u16>() {
+                                        Some(n as f32)
+                                    } else {
+                                        return Err(format!(
+                                            "FATAL: line {}, failed to parse final \
+                                                    mark to a number (int/float)",
+                                            i + 2
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        None => {
+                            return Err(format!(
+                                "FATAL: line {}, final mark was not founld at column {}",
+                                i + 2,
+                                config.final_mark_column + 1
+                            ))
+                        }
+                    }
+                }
 
-        let temp = record.get(config.mark_column).unwrap_or("0.0");
-        let mark = Some(
-            temp.parse::<f32>()
-                .unwrap_or_else(|_| temp.parse::<u16>().unwrap() as f32),
-        );
+                let temp = record.get(config.mark_column).unwrap_or("0.0");
+                let mark = temp
+                    .parse::<f32>()
+                    .unwrap_or_else(|_| temp.parse::<u16>().unwrap_or(0) as f32);
 
-        vec.push((
-            record.get(config.name_column).unwrap_or("").to_owned(),
-            record.get(config.id_column).unwrap_or("").to_owned(),
-            mark.unwrap(),
-            full_mark.unwrap(),
-        ))
+                let name = record.get(config.name_column).unwrap_or("").to_owned();
+                let id = record.get(config.id_column).unwrap_or("").to_owned();
+
+                if name.is_empty() && id.is_empty() {
+                    errors.push(format!("line {}, no name found, no id found", i + 2));
+                } else if name.is_empty() {
+                    errors.push(format!("line {}, no name found", i + 2));
+                } else if id.is_empty() {
+                    errors.push(format!("line {}, no id found", i + 2));
+                } else {
+                    vec.push((name, id, mark, full_mark.unwrap()))
+                }
+            }
+            Err(_) => {
+                errors.push(format!("line: {}, could not be serialized", i + 2));
+            }
+        };
     }
-    vec
+    Ok((vec, errors))
 }
 
 fn update_config(config: &mut Config) {
@@ -516,6 +687,10 @@ fn update_config(config: &mut Config) {
     update_csv(&mut config.mark_column);
     update_csv(&mut config.final_mark_column);
 
+    config
+        .vertical_postions
+        .sort_unstable_by(|a, b| b[1].partial_cmp(&a[1]).unwrap());
+
     if config.name_postion[1] * 2 <= page_height {
         update_coords(&mut config.name_postion);
         update_coords(&mut config.id_postion);
@@ -527,6 +702,9 @@ fn update_config(config: &mut Config) {
             };
         }
         config.horizontal_marks.sort_unstable();
+        config
+            .horizontal_postions
+            .sort_unstable_by(|a, b| a[0].partial_cmp(&b[0]).unwrap());
         update_coords(&mut config.first_marker_postion);
         update_coords(&mut config.second_marker_postion);
         update_coords(&mut config.uel_mark_postion);
@@ -539,9 +717,6 @@ fn update_config(config: &mut Config) {
             };
         }
         config.vertical_postions.reverse();
-        config
-            .vertical_marks
-            .sort_unstable_by(|a, b| a[0].partial_cmp(&b[0]).unwrap());
     };
 }
 
@@ -551,7 +726,7 @@ fn pdf_height() -> io::Result<usize> {
             Command::new("leafedit.exe")
                 .arg("info")
                 .arg("page-size")
-                .arg("patched.pdf")
+                .arg("uel_pdf.patched")
                 .output()?
                 .stdout,
         )
@@ -570,7 +745,7 @@ fn pdf_height() -> io::Result<usize> {
             Command::new("./leafedit")
                 .arg("info")
                 .arg("page-size")
-                .arg("patched.pdf")
+                .arg("uel_pdf.patched")
                 .output()?
                 .stdout,
         )
@@ -613,13 +788,13 @@ fn patch_pdf(pdf_path: &PathBuf) -> io::Result<()> {
         Command::new("leafedit.exe")
             .arg("patch")
             .arg(pdf_path)
-            .arg("patched.pdf")
+            .arg("uel_pdf.patched")
             .output()?;
     } else if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
         Command::new("./leafedit")
             .arg("patch")
             .arg(pdf_path)
-            .arg("patched.pdf")
+            .arg("uel_pdf.patched")
             .output()?;
     }
 
@@ -642,7 +817,10 @@ fn get_pdf_path(entries: Vec<PathBuf>) -> Option<PathBuf> {
 
 fn expand1() -> io::Result<()> {
     fs::create_dir("csv_files")?;
-    fs::write("./uelau_config.txt", include_str!("../include/config.toml"))?;
+    fs::write(
+        "./uelaur_config.txt",
+        include_str!("../include/config.toml"),
+    )?;
 
     Ok(())
 }
@@ -1033,7 +1211,7 @@ fn init_ui(recv: mpsc::Receiver<Action>, finish: mpsc::Sender<u8>) -> thread::Jo
             if let Ok(action) = recv.try_recv() {
                 match action {
                     Action::Msg(msg) => ansi.display(msg),
-                    Action::Update(msg) => ansi.next(msg),
+                    Action::Update(msg) => ansi.next(&msg),
                     Action::Quit => {
                         ansi.clean();
                         break;
@@ -1054,16 +1232,17 @@ fn init_ui(recv: mpsc::Receiver<Action>, finish: mpsc::Sender<u8>) -> thread::Jo
 
 enum Action {
     Msg(Message),
-    Update(&'static str),
+    Update(String),
     Panic,
     Quit,
 }
 
 #[allow(dead_code)]
 enum Message {
-    Warn(&'static str),
-    Fail(&'static str),
-    Succ(&'static str),
+    Warn(String),
+    Fail(String),
+    Succ(String),
+    Fatal(String),
 }
 
 struct Ansi {
@@ -1126,6 +1305,7 @@ impl Ansi {
                 Message::Warn(m) => println!("Waring: {}\n", m),
                 Message::Fail(m) => println!("Failure: {}\n", m),
                 Message::Succ(m) => println!("Success: {}\n", m),
+                Message::Fatal(m) => println!("FATAL ERROR: {}\n", m.to_uppercase()),
             }
         } else {
             print!("\n\x1b[1A{}\n\x1b[2A", " ".repeat(10 + self.lenth));
@@ -1133,47 +1313,64 @@ impl Ansi {
                 Message::Warn(m) => println!("\n\x1b[33mwaring\x1b[0m: {}", m),
                 Message::Fail(m) => println!("\n\x1b[31mfailure\x1b[0m: {}", m),
                 Message::Succ(m) => println!("\n\x1b[32msuccess\x1b[0m: {}", m),
+                Message::Fatal(m) => println!(
+                    "\n\x1b[31mFATAL ERROR\x1b[0m: \x1b[31m{}\x1b[0m",
+                    m.to_uppercase()
+                ),
             }
         }
     }
 
     fn intro(&self) {
-        let uelau = [
-            ' ', ' ', '█', '█', '╗', ' ', ' ', ' ', '█', '█', '╗', '█', '█', '█', '█', '█', '█',
-            '█', '╗', '█', '█', '╗', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '█', '█', '█', '█',
-            '█', '╗', ' ', '█', '█', '╗', ' ', ' ', ' ', '█', '█', '╗', ' ', ' ', '█', '█', '║',
-            ' ', ' ', ' ', '█', '█', '║', '█', '█', '╔', '═', '═', '═', '═', '╝', '█', '█', '║',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', '█', '█', '╔', '═', '═', '█', '█', '╗', '█', '█',
-            '║', ' ', ' ', ' ', '█', '█', '║', ' ', ' ', '█', '█', '║', ' ', ' ', ' ', '█', '█',
-            '║', '█', '█', '█', '█', '█', '╗', ' ', ' ', '█', '█', '║', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', '█', '█', '█', '█', '█', '█', '█', '║', '█', '█', '║', ' ', ' ', ' ', '█',
-            '█', '║', ' ', ' ', '█', '█', '║', ' ', ' ', ' ', '█', '█', '║', '█', '█', '╔', '═',
-            '═', '╝', ' ', ' ', '█', '█', '║', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '█', '█', '╔',
-            '═', '═', '█', '█', '║', '█', '█', '║', ' ', ' ', ' ', '█', '█', '║', ' ', ' ', '╚',
-            '█', '█', '█', '█', '█', '█', '╔', '╝', '█', '█', '█', '█', '█', '█', '█', '╗', '█',
-            '█', '█', '█', '█', '█', '█', '╗', ' ', ' ', '█', '█', '║', ' ', ' ', '█', '█', '║',
-            '╚', '█', '█', '█', '█', '█', '█', '╔', '╝', ' ', ' ', ' ', '╚', '═', '═', '═', '═',
-            '═', '╝', ' ', '╚', '═', '═', '═', '═', '═', '═', '╝', '╚', '═', '═', '═', '═', '═',
-            '═', '╝', ' ', ' ', '╚', '═', '╝', ' ', ' ', '╚', '═', '╝', ' ', '╚', '═', '═', '═',
-            '═', '═', '╝', ' ', ' ',
+        let uelaur = [
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▄', '▄', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█', '█',
+            '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', ' ',
+            '▄', '▄', '█', '▀', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', '▄', '█', '▀',
+            '█', '█', '▄', ' ', '▀', '█', '█', '█', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', '▀',
+            '█', '█', '█', '▄', '█', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
+            '█', '█', ' ', ' ', '▄', '█', '▀', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', ' ',
+            ' ', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
+            '█', '█', ' ', ' ', ' ', ' ', '█', '█', '▀', ' ', '▀', '▀', ' ', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', '▀', '▀', '▀', '▀', '▀', '▀',
+            ' ', ' ', '█', '█', ' ', ' ', ' ', '▄', '█', '█', '█', '█', '█', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', '▄',
+            ' ', ' ', ' ', ' ', '▄', ' ', ' ', '█', '█', ' ', ' ', '█', '█', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█', '█', '█', '█', '▀', '█', '█',
+            '█', '▄', ' ', '▀', '█', '█', '█', '█', '█', '▀', '▄', '█', '█', '█', '█', '▄', ' ',
+            '█', '█', '█', '█', '▀', '█', '█', '▄', ' ', '▀', '█', '█', '█', '█', '▀', '█', '█',
+            '█', ' ', '▄', '█', '█', '█', '█', '▄', ' ', ' ', ' ',
         ];
         if self.no_ansi {
             println!("\n UEL_AU\n")
         } else {
-            for _ in 0..7 {
+            for _ in 0..10 {
                 println!();
             }
-            print!("\n\x1b[7A  ");
-            for i in 1..46 {
-                for j in 0..6 {
-                    print!("{}\x1b[1B\x1b[1D", uelau[i + 46 * j]);
+            print!("\n\x1b[10A  ");
+            for i in 1..56 {
+                for j in 0..9 {
+                    print!("{}\x1b[1B\x1b[1D", uelaur[i + 56 * j]);
                     std::io::stdout().flush().ok();
                     thread::sleep(time::Duration::new(0, 6_000_000));
                 }
-                print!("\n\x1b[7A\x1b[{}C", i + 1);
+                print!("\n\x1b[10A\x1b[{}C", i + 1);
                 thread::sleep(time::Duration::new(0, 10_000_000));
             }
-            for _ in 0..7 {
+            for _ in 0..10 {
                 println!();
             }
         }

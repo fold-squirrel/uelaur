@@ -2,7 +2,7 @@
 # Id: 20201701804
 
 # I'm not responsible for any mistakes in the output uel pdfs
-# checking the coorectness of all data in the output pdfs is the users responsibility
+# checking the correctness of all data in the output pdfs is the users responsibility
 
 ## csv
 # columns start from 1
@@ -13,7 +13,6 @@ final_mark_column = 4 # only first row is used, if you mess this one up then you
 
 # you can get the co-ordinates from https://pdflite.co/simplified-pdf-viewer/index.html
 # or use pdfbox which is my preferred https://pdfbox.apache.org/download.cgi
-
 
 ## student field
 name_postion = [x, y]

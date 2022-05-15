@@ -140,8 +140,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "uelau"
-version = "0.2.0"
+name = "uelaur"
+version = "0.3.0"
 dependencies = [
  "csv",
  "edit-distance",
