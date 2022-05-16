@@ -19,7 +19,7 @@ const SHORT_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(5, 0)
     } else {
-        Duration::MAX
+        todo!()
     }
 };
 
@@ -31,7 +31,7 @@ const MEDIUM_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(20, 0)
     } else {
-        Duration::MAX
+        todo!()
     }
 };
 
@@ -43,7 +43,7 @@ const LONG_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(30, 0)
     } else {
-        Duration::MAX
+        todo!()
     }
 };
 
@@ -675,10 +675,10 @@ fn update_config(config: &mut Config) {
         }
     };
 
+    let rev = config.name_postion[1]*2 <= page_height;
     let update_coords = |num: &mut [usize; 2]| {
-        let height = pdf_height as usize;
-        if num[1] <= height {
-            num[1] = height - num[1]
+        if rev && num[1] <= page_height {
+            num[1] = page_height - num[1]
         }
     };
 
@@ -691,33 +691,36 @@ fn update_config(config: &mut Config) {
         .vertical_postions
         .sort_unstable_by(|a, b| b[1].partial_cmp(&a[1]).unwrap());
 
-    if config.name_postion[1] * 2 <= page_height {
-        update_coords(&mut config.name_postion);
-        update_coords(&mut config.id_postion);
-        let first = config.horizontal_postions[0][1];
-        for val in config.horizontal_postions.iter_mut() {
-            update_coords(val);
-            if val[1] == 0 {
-                val[1] = first
-            };
-        }
-        config.horizontal_marks.sort_unstable();
-        config
-            .horizontal_postions
-            .sort_unstable_by(|a, b| a[0].partial_cmp(&b[0]).unwrap());
-        update_coords(&mut config.first_marker_postion);
-        update_coords(&mut config.second_marker_postion);
-        update_coords(&mut config.uel_mark_postion);
-        update_coords(&mut config.asu_mark_postion);
-        let first = config.vertical_postions[0][0];
-        for val in config.vertical_postions.iter_mut() {
-            update_coords(val);
-            if val[0] == 0 {
-                val[0] = first
-            };
-        }
+    update_coords(&mut config.name_postion);
+    update_coords(&mut config.id_postion);
+
+    config
+        .horizontal_postions
+        .sort_unstable_by(|a, b| a[0].partial_cmp(&b[0]).unwrap());
+    let first = config.horizontal_postions.first().unwrap()[1];
+    for val in config.horizontal_postions.iter_mut() {
+        if val[1] == 0 {
+            val[1] = first
+        };
+        update_coords(val);
+    }
+
+    update_coords(&mut config.first_marker_postion);
+    update_coords(&mut config.second_marker_postion);
+    update_coords(&mut config.uel_mark_postion);
+    update_coords(&mut config.asu_mark_postion);
+
+    let first = config.vertical_postions.last().unwrap()[0];
+    for val in config.vertical_postions.iter_mut() {
+        if val[0] == 0 {
+            val[0] = first
+        };
+        update_coords(val);
+    }
+
+    if rev {
         config.vertical_postions.reverse();
-    };
+    }
 }
 
 fn pdf_height() -> io::Result<usize> {
@@ -1323,9 +1326,9 @@ impl Ansi {
 
     fn intro(&self) {
         let uelaur = [
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', 'A', 'u', 't', 'h', 'o', 'r', ':', ' ', 'A', 'h', 'm', 'e', 'd', ' ', 'A',
+            'l', 'a', 'a', ' ', 'G', 'o', 'm', 'a', 'a', ' ', 'M', 'o', 'h', 'a', 'm', 'm', 'e',
+            'd', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▄', '▄', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
