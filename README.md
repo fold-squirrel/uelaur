@@ -130,8 +130,8 @@ name of each file that generated an error as well as the line number of where th
 occurred and the reason for the error
 
 ### configuration related
-on the first time an error occurs error in the config file then the **uelaur_config.txt** will
-renamed to **config\_backup.txt** and a **uelaur_config.txt** will be created after striping all the comments from the previous file while
+on the first time an error occurs in the config file then the **uelaur_config.txt** will
+renamed to **config_backup.txt** and a **uelaur_config.txt** will be created after striping all the comments from the previous file while
 preserve the valid options and also adding more information about each error that occurred
 
 if an error occurs for the second time or later then **uelaur_config.txt** will be overwritten
