@@ -2,44 +2,46 @@
 stands for Uel Evaluation Leaf Automation Utility in Rust
 
 ## Discription
-this is a tool I created to automate the tedious task of filling the uel evaluation \
-paper, it is simply a wrapper around [leafedit](https://github.com/navyleaf/leafedit)
+this is a tool I created for filling the uel paper automation,\
+it's simply a wrapper around [leafedit](https://github.com/navyleaf/leafedit)
 > ### leafedit
-> is a command line pdf editor that I wrote due to my interest in the
-> pdf format and love for CLI and Rust, I do plan on developing leafedit into a
-> tool than can act as the backend for a gui pdf editor
+> is a command line pdf editor that I wrote for my interest in the
+> pdf format as well as my love for CLI and Rust, I'm planning on developing leafedit
+> into a tool than can act as the backend for a gui pdf editor
 
-so all that uelaur does is read the data of a csv file and the co-ordinates of each field
-from a toml file then run leafedit with the formated arguments
-and leafedit does the heavy lifting
+so uelaur reads the data of a csv file plus the co-ordinates of each field
+from a toml file then run leafedit with the formated arguments and
+leafedit does the heavy lifting
 
 ## Usage
-first create an new empty directory then place uelaur in that directory an run it,
+first create an empty directory, after that place uelaur in this directory and run it,
 if all goes well you should see \
 `new project intialized` \
-now a you will see a directory name **csv_files** and a file called **uelaur_config.txt** in \
-the directory you ran uelaur in
+now you will see a directory named **csv_files**
+and a file called **uelaur_config.txt** in
+the directory you ran it in
 
-now place all the csv file in the the **csv_files directory** \(note all file extentions
+now place all the csv files in the the **csv_files** directory \(note all file extentions
 are unchecked except for pdf files\)
 
 now configure uelaur by editing **uelaur_config.txt**, you can get the co-ordinates from \
-from [pdflite.co](https://pdflite.co/simplified-pdf-viewer/index.html) or better yet
-use [pdfbox](https://pdfbox.apache.org/download.cgi) which is my preferred choice, \
+[pdflite.co](https://pdflite.co/simplified-pdf-viewer/index.html) or
+[pdfbox](https://pdfbox.apache.org/download.cgi) which is my preferred choice, \
 it does require java to be installed but it's much better and easier to use
 
-finally place the uel pdf in the directory you ran uelaur in then run uelaur again and \
+finally place the uel pdf in the project directory and run it again then \
 watch the magic
 
-assuming no error occured uelaur will displays `done !!!` then it will exit after a few seconds and now you will find \
+assuming no error occured, uelaur will displays `done !!!` then exit after
+a few seconds and now you will find \
 two new directories:
 
-- **uel_papers**: which will contain a directory for every csv file present in the **csv_files** \
-each directory will bear the same name \(minus the extention\) as a csv file
+- **uel_papers**: which will contain a directory for every csv file present in **csv_files** \
+each directory will have the same name \(minus the extention\) as a csv file
 
 - **review**: which will contain a pdf for each directory in uel\_papers \
-the pdf file is the result of merging all the pdf files of the directory inside
-uel\_papers bearing the same name
+the pdf file is the result of merging all the files in the directory inside
+**uel_papers** having the same name
 
 it will also contain two files:
 - **uel_pdf.patched**: *internal and shouldn't be visible to the user*
@@ -49,15 +51,15 @@ but I didn't bother hidding them
 
 ## Configuration
 
-configuration file is the toml format, \
+configuration file is in the toml format, \
 all numeric values must be unsigned integers
 
 ### csv related options
-- **name_column**: the column number containing each students name
+- **name_column**: the column number containing each student's name
 
-- **id_column**: the column number containing each students id
+- **id_column**: the column number containing each student's id
 
-- **mark_column**: the column number containing each students mark
+- **mark_column**: the column number containing each student's mark
 
 - **final_mark_column**: the column number containing the final mark
 
@@ -65,10 +67,10 @@ note: columns start from 1
 
 ### uel pdf related
 - **name_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the student name in the pdf
+and the second is the y co-ordinate of the student name postion in the pdf
 
 - **id_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the student id in the pdf
+and the second is the y co-ordinate of the student id postion in the pdf
 
 - **student_field_font_size**: the font size of the student name and id
 
@@ -76,44 +78,46 @@ and the second is the y co-ordinate of the postion of the student id in the pdf
 criteria fields, in other words each mark that is directly above a check mark box
 
 - **horizontal_postions**: an array having the same lenght as the horizontal\_marks array,
-each entry is an array containing 2 values, the x and y co-ordinates of the where the
+each entry is an array containing 2 values, the x and y co-ordinates of where the
 check mark should be placed if the student mark is greater than the mark after the
 current mark
 
 - **horizontal_feild_font_size**: the font size of the check mark used in the horizontal
 mark boxes
 
-- **first_marker_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the first marker in the pdf
+- **first_marker_postion**: an array containing two numbers, the first is the x co-ordinate
+and the second is the y co-ordinate of the first marker postion in the pdf
 
-- **second_marker_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the second marker in the pdf
+- **second_marker_postion**: an array containing two  numbers,
+the first is the x co-ordinate and the second is the y co-ordinate of the
+second marker postion in the pdf
 
-- **asu_mark_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the asu in the pdf
+- **asu_mark_postion**: an array containing two numbers, the first is the x co-ordinate
+and the second is the y co-ordinate of the asu mark postion in the pdf
 
-- **uel_mark_postion**: an array containing two  numbers, the first is the x co-ordinate
-and the second is the y co-ordinate of the postion of the uel in the pdf
+- **uel_mark_postion**: an array containing two numbers, the first is the x co-ordinate
+and the second is the y co-ordinate of the uel mark postion in the pdf
 
-- **grade_field_font_size**: the font size used of the above fields
+- **grade_field_font_size**: the font size used for the marks
 
 - **vertical_marks**: an array containing arrays, each contained array contains to numbers
-the first is the upper bound for the uel mark of current range, the second is the upper bound for
-the asu mark of the current range, current range is range given to each letter grade,
+the first is the upper bound for the uel mark of current range,
+the second is the upper bound for the asu mark of the current range, the
+current range is the range given to each letter grade,
 so A+ will always have an upper bound of 100 therefor the firsr entry will always be
 [100, 100], also 0 is not an upper bound to any letter grade so the array must never
 contain [0, 0]
 
 - **vertical_postions**: an array having the same lenght as the vertical\_marks array,
-each entry is an array containing 2 values, the x and y co-ordinates of the where the
+each entry is an array containing 2 values, the x and y co-ordinates where the
 check mark should be placed if the student mark is in the range of the corresponding letter
 grade
 
 - **vertical_feild_font_size**: the font size of the check mark used in the vertical
 mark boxes
 
-note: all co-ordinates should be taken at the bottom left corner of the field
-as the y co-ordinate supplied will act as the baseline for each characters
+note: all co-ordinates should at the bottom left corner of the field
+as the y co-ordinate supplied will act as the baseline for the text
 
 ## Error handling
 ### csv related errors
@@ -121,32 +125,28 @@ if the final mark in the second line of the csv file is not present
 at the expected column or isn't a valid number (float/int) then the entire
 csv file will be skipped, also the final mark is only required in the second line only
 
-if the name or id is empty then that line is skipped
+if the name or id is empty then this student will be is skipped
 
-if the student mark is not present or isn't a number (float/int) then 0 will be used instead
+if the student mark is not present or isn't a number (float/int), 0 will be used
 
-if any error occurred, then a file named **CSV_ERRORS.txt** will be created containing the file
-name of each file that generated an error as well as the line number of where the error
-occurred and the reason for the error
+if any errors occurred, then a file named **CSV_ERRORS.txt** will be created containing
+more information about the errors
 
 ### configuration related
-on the first time an error occurs in the config file then the **uelaur_config.txt** will
-renamed to **config_backup.txt** and a **uelaur_config.txt** will be created after striping all the comments from the previous file while
-preserve the valid options and also adding more information about each error that occurred
+the first time an error occurs in the config file then **uelaur_config.txt** will be
+renamed to **config_backup.txt** and a new **uelaur_config.txt** will be
+created, preserving the valid options and contain more information about each
+the errors
 
-if an error occurs for the second time or later then **uelaur_config.txt** will be overwritten
-directly, the reason for this is because the **uelaur_config.txt** that is
-generated the first time uelaur is run contains useful comments but
-**uelaur_config.txt** that is created after first error only contains error messages
+if any errors occur for the second time or later then **uelaur_config.txt** will be
+overwritten directly with the new error messages
 
 #### config error types
-- missing: the following keys where not present in the file
-- un-expected: the following keys are not part of the config
-- misspelled: the following keys are missing and un-expected keys where found and the
-edit distance between the two keys is less than 4 operations
-- repeated: the following keys where found multiple time even if all occurrences have
-the same value
-- in-correct: the key is valid but the value associated with it is invalid,
+- **missing**: the following keys where not present in the file
+- **un-expected**: the following keys are not part of the config
+- **misspelled**: the following keys may contain a typo
+- repeated: the following keys where found multiple time
+- in-correct: the key is valid but the value assigned to is invalid,
 refer to the **config_backup.txt** as it might help
 
 ### Other
@@ -154,32 +154,35 @@ all other errors are printed to standard out
 
 ## Limitations
 windows cmd has a feature called QuickEdit which will block all print operations if
-the user tries to select text, and will unblock them once any key is pressed and I couldn't
-find a way to disable this in code so if the user ever clicks on the console they need to press
-a key for messages to be displayed again, \
-note that all print operations are called from a separate thread than the main thread so uelaur
-could exit without displaying error messages and warnigs
+the user selects text, it will unblock them once any key is pressed and I couldn't
+find a way to disable this in code so if a user clicked on
+the console they need to press
+any key for messages to be displayed again, \
+note that all print operations are called from a separate thread
+than the main thread so uelaur
+could exit without displaying error messages and warnings
 
 
-also I don't know how to sign binarys so if you do download uelaur from the here, your browser will block it
+also I don't know how to sign binarys so if you do download uelaur from the here,
+your browser will block it
 or warn you that it's not a commonly download executable, after that if you try to run
 it windows will block it with a blue screen because it contains a "mark of the web" and
-you will need to right click the executable and goto properties and check the box next to
-unblock
+you will need to right click the executable and click properties and kindly check the
+unblock box
 
 
-the mac version is untested and will most likely fail as the leafedit bundled with uelaur is
-unsigned, because I don't own a mac or an apple developer account \
-if someone can compile it and sign it I would thankful
+the macos version is untested and will most likely fail as the leafedit
+bundled with uelaur is unsigned, because I don't own a mac or an apple developer account \
+if someone can compile and sign it I would very thankful
 
 ## final word
 I don't plan on maintaining this project so that's why the variables and function
-names aren't discriptive, and the order of function defitions is random \
-but if someone is willing to maintain uelaur then I will consider rewriting it in a cleaner way
+names aren't discriptive, and the order of the function is random \
+but if someone is willing to maintain uelaur, I will consider rewriting it in a cleaner way
 
 \
 \
 \
 \
-also if it's not asking too much I'd like a few bonus marks as compensation for my I hard work \
+also if it's not asking too much I'd like a few bonus marks as reward for my I hard work \
 *I really need the extra marks*
