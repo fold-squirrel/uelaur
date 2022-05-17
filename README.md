@@ -1,5 +1,6 @@
 # uelaur
-stands for Uel Evaluation Leaf Automation Utility in Rust
+**U**el **E**valuation **L**eaf **A**utomation **U**tility in **R**ust \
+uelaur for short
 
 ## Discription
 this is a tool I created for filling the uel paper automation,\
@@ -63,7 +64,8 @@ all numeric values must be unsigned integers
 
 - **final_mark_column**: the column number containing the final mark
 
-note: columns start from 1
+note: columns start from 1, \
+also the first row is always skipped as it's usually contains each column's name
 
 ### uel pdf related
 - **name_postion**: an array containing two  numbers, the first is the x co-ordinate
@@ -101,12 +103,12 @@ and the second is the y co-ordinate of the uel mark postion in the pdf
 - **grade_field_font_size**: the font size used for the marks
 
 - **vertical_marks**: an array containing arrays, each contained array contains to numbers
-the first is the upper bound for the uel mark of current range,
-the second is the upper bound for the asu mark of the current range, the
+the first is the lower bound for the uel mark of current range,
+the second is the lower bound for the asu mark of the current range, the
 current range is the range given to each letter grade,
-so A+ will always have an upper bound of 100 therefor the firsr entry will always be
-[100, 100], also 0 is not an upper bound to any letter grade so the array must never
-contain [0, 0]
+so F will always have an lower bound of 0 therefor the last entry will always be
+[0, 0], also 100 is not an lower bound to any letter grade so the array must never
+contain [100, 100]
 
 - **vertical_postions**: an array having the same lenght as the vertical\_marks array,
 each entry is an array containing 2 values, the x and y co-ordinates where the
@@ -125,7 +127,9 @@ if the final mark in the second line of the csv file is not present
 at the expected column or isn't a valid number (float/int) then the entire
 csv file will be skipped, also the final mark is only required in the second line only
 
-if the name or id is empty then this student will be is skipped
+if the name or id is empty, or if name contains characters beside
+(\[A-Z\]|\[a-z\]|\s|-) *(perl regex)* or if the id contains characters beside ([0-9]|\`|'|\_|,|\\.)
+*(perl regex)* then this student will be is skipped
 
 if the student mark is not present or isn't a number (float/int), 0 will be used
 
@@ -167,15 +171,17 @@ also I don't know how to sign binarys so if you do download uelaur from the here
 your browser will block it
 or warn you that it's not a commonly download executable, after that if you try to run
 it windows will block it with a blue screen because it contains a "mark of the web" and
-you will need to right click the executable and click properties and kindly check the
+you will need to right click the executable and click properties and check the
 unblock box
 
 
 the macos version is untested and will most likely fail as the leafedit
 bundled with uelaur is unsigned, because I don't own a mac or an apple developer account \
-if someone can compile and sign it I would very thankful
+so if your can compile, sign and test it, then open a pull request with your compiled binary
 
 ## final word
+I'd thank kevin Chrief for reviewing with the README
+
 I don't plan on maintaining this project so that's why the variables and function
 names aren't discriptive, and the order of the function is random \
 but if someone is willing to maintain uelaur, I will consider rewriting it in a cleaner way
@@ -184,5 +190,5 @@ but if someone is willing to maintain uelaur, I will consider rewriting it in a 
 \
 \
 \
-also if it's not asking too much I'd like a few bonus marks as reward for my I hard work \
+also I'd like a few bonus marks as compensation for my I hard work \
 *I really need the extra marks*

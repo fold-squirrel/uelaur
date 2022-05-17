@@ -19,7 +19,7 @@ const SHORT_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(5, 0)
     } else {
-        todo!()
+        unimplemented!()
     }
 };
 
@@ -31,7 +31,7 @@ const MEDIUM_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(20, 0)
     } else {
-        todo!()
+        unimplemented!()
     }
 };
 
@@ -43,7 +43,7 @@ const LONG_DUR: std::time::Duration = {
     } else if cfg!(target_os = "macos") {
         Duration::new(30, 0)
     } else {
-        todo!()
+        unimplemented!()
     }
 };
 
@@ -466,22 +466,56 @@ type Data = (String, String, f32, f32);
 
 fn gen_leafedit_operations(dir: PathBuf, config: &Config, data: Vec<Data>) -> Vec<Vec<String>> {
     let mut operation = vec![];
-    for (name, id, mark, full_mark) in data {
-        let mut formated_name = "".to_owned();
-        for word in name.split_whitespace() {
-            let mut chs = word.chars();
-            formated_name.push(chs.next().unwrap().to_ascii_uppercase());
-            formated_name.push_str(&chs.map(|f| f.to_ascii_lowercase()).collect::<String>());
-            formated_name.push(' ');
-        }
-        formated_name.pop();
+    for (mut name, mut id, mark, full_mark) in data {
+        let mut space_before = false;
+        name.retain(|ch| {
+            if space_before {
+                if ch.is_whitespace() {
+                    space_before = true;
+                    false
+                } else {
+                    space_before = false;
+                    true
+                }
+            } else {
+                if ch.is_whitespace() {
+                    space_before = true;
+                }
+                true
+            }
+        });
+        let mut cap = true;
+        let formated_name = name
+            .chars()
+            .map(|ch| {
+                if ch == ' ' || ch == '-' {
+                    cap = true;
+                    ch
+                } else if cap {
+                    cap = false;
+                    ch.to_uppercase().next().unwrap()
+                } else {
+                    ch.to_lowercase().next().unwrap()
+                }
+            })
+            .collect::<String>();
+        id.retain(|ch| ch.is_numeric());
         let mut file_name = dir.clone();
-        file_name.push(&format!("{}_{}.pdf", formated_name.replace(' ', "_"), id));
+        file_name.push(&format!(
+            "{}_{}.pdf",
+            formated_name
+                .chars()
+                .map(|ch| if ch == ' ' || ch == '-' { '_' } else { ch })
+                .collect::<String>(),
+            id
+        ));
 
-        let first_and_second_marker = if mark % 1_f32 < 0.1 {
-            format!("{}/{}", mark as u64, full_mark as u64)
-        } else {
+        let first_and_second_marker = if ((mark*10.0) % 1.0) > 0.15 {
+            format!("{:.2}/{}", mark, full_mark as u64)
+        } else if  mark % 1.0 > 0.1 {
             format!("{:.1}/{}", mark, full_mark as u64)
+        } else {
+            format!("{:.0}/{}", mark, full_mark as u64)
         };
 
         let asu_mark = ((mark / full_mark) * 100_f32).clamp(0_f32, 100_f32);
@@ -560,12 +594,12 @@ fn gen_leafedit_operations(dir: PathBuf, config: &Config, data: Vec<Data>) -> Ve
 }
 
 fn get_uel_mark(vertical_marks: &[[usize; 2]], mark: f32, index: usize) -> f32 {
-    let (uel_less, asu_less) = if index == vertical_marks.len() - 1 {
-        (0_f32, 0_f32)
+    let (uel_less, asu_less) = if index == 0 {
+        (100_f32, 100_f32)
     } else {
         (
-            vertical_marks[index + 1][0] as f32,
-            vertical_marks[index + 1][1] as f32,
+            vertical_marks[index - 1][0] as f32,
+            vertical_marks[index - 1][1] as f32,
         )
     };
 
@@ -578,20 +612,22 @@ fn get_uel_mark(vertical_marks: &[[usize; 2]], mark: f32, index: usize) -> f32 {
 }
 
 fn get_vertical_mark_index(vertical_marks: &[[usize; 2]], mark: f32) -> usize {
-    let mut index = vertical_marks.len();
+    let mut index = 0;
+    let mark = mark as usize;
     for (i, seg) in vertical_marks.iter().enumerate() {
-        if mark as usize > seg[1] {
+        if mark >= seg[1] {
             index = i;
             break;
         }
     }
-    index - 1
+    index
 }
 
 fn get_horizontal_mark_index(horizontal_marks: &[usize], mark: f32) -> usize {
     let mut index = horizontal_marks.len() - 1;
+    let mark = mark as usize;
     for (i, seg) in horizontal_marks.iter().enumerate() {
-        if mark as usize >= *seg {
+        if mark >= *seg {
             index = i;
             break;
         }
@@ -615,10 +651,10 @@ fn get_all_records(csv: PathBuf, config: &Config) -> Result<(Vec<Data>, Vec<Stri
                 if full_mark.is_none() {
                     match record.get(config.final_mark_column) {
                         Some(temp) => {
-                            full_mark = match temp.parse::<f32>() {
+                            full_mark = match temp.trim().parse::<f32>() {
                                 Ok(n) => Some(n),
                                 Err(_) => {
-                                    if let Ok(n) = temp.parse::<u16>() {
+                                    if let Ok(n) = temp.trim().parse::<u16>() {
                                         Some(n as f32)
                                     } else {
                                         return Err(format!(
@@ -642,18 +678,71 @@ fn get_all_records(csv: PathBuf, config: &Config) -> Result<(Vec<Data>, Vec<Stri
 
                 let temp = record.get(config.mark_column).unwrap_or("0.0");
                 let mark = temp
+                    .trim()
                     .parse::<f32>()
-                    .unwrap_or_else(|_| temp.parse::<u16>().unwrap_or(0) as f32);
+                    .unwrap_or_else(|_| temp.trim().parse::<i16>().unwrap_or(0) as f32)
+                    .clamp(0.0, full_mark.unwrap());
 
-                let name = record.get(config.name_column).unwrap_or("").to_owned();
-                let id = record.get(config.id_column).unwrap_or("").to_owned();
+                let name = record
+                    .get(config.name_column)
+                    .unwrap_or("")
+                    .trim()
+                    .to_owned();
+                let id = record.get(config.id_column).unwrap_or("").trim().to_owned();
 
-                if name.is_empty() && id.is_empty() {
-                    errors.push(format!("line {}, no name found, no id found", i + 2));
-                } else if name.is_empty() {
-                    errors.push(format!("line {}, no name found", i + 2));
-                } else if id.is_empty() {
-                    errors.push(format!("line {}, no id found", i + 2));
+                let mut name_not_ascii = false;
+                let mut name_not_alpha = false;
+                for ch in name.chars() {
+                    if !ch.is_ascii() {
+                        name_not_ascii = true;
+                        break;
+                    } else if ch == ' ' || ch == '-' {
+                        continue;
+                    } else if !ch.is_alphabetic() {
+                        name_not_alpha = true;
+                        break;
+                    }
+                }
+
+                let mut id_not_ascii = false;
+                let mut id_not_numric = false;
+                for ch in id.chars() {
+                    if !ch.is_ascii() {
+                        id_not_ascii = true;
+                        break;
+                    } else if ch == ',' || ch == '_' || ch == '\'' || ch == '`' {
+                        continue;
+                    } else if !ch.is_numeric() {
+                        id_not_numric = true;
+                        break;
+                    }
+                }
+
+                if name.is_empty()
+                    || id.is_empty()
+                    || name_not_ascii
+                    || name_not_alpha
+                    || id_not_ascii
+                    || id_not_numric
+                {
+                    let mut error_text = format!("line {}", i + 2);
+                    if name.is_empty() {
+                        error_text.push_str(", name not present");
+                    }
+                    if id.is_empty() {
+                        error_text.push_str(", id not present");
+                    }
+                    if name_not_ascii {
+                        error_text.push_str(", name not in english");
+                    } else if name_not_alpha {
+                        error_text.push_str(", name contains numbers or special characters");
+                    }
+                    if id_not_ascii {
+                        error_text.push_str(", id not in english");
+                    } else if id_not_numric {
+                        error_text.push_str(", id contains letters or special characters");
+                    }
+                    errors.push(error_text);
                 } else {
                     vec.push((name, id, mark, full_mark.unwrap()))
                 }
@@ -675,7 +764,7 @@ fn update_config(config: &mut Config) {
         }
     };
 
-    let rev = config.name_postion[1]*2 <= page_height;
+    let rev = config.name_postion[1] * 2 <= page_height;
     let update_coords = |num: &mut [usize; 2]| {
         if rev && num[1] <= page_height {
             num[1] = page_height - num[1]
@@ -710,7 +799,7 @@ fn update_config(config: &mut Config) {
     update_coords(&mut config.uel_mark_postion);
     update_coords(&mut config.asu_mark_postion);
 
-    let first = config.vertical_postions.last().unwrap()[0];
+    let first = config.vertical_postions.first().unwrap()[0];
     for val in config.vertical_postions.iter_mut() {
         if val[0] == 0 {
             val[0] = first
@@ -721,6 +810,10 @@ fn update_config(config: &mut Config) {
     if rev {
         config.vertical_postions.reverse();
     }
+
+    config
+        .vertical_marks
+        .sort_unstable_by(|a, b| b[1].partial_cmp(&a[1]).unwrap());
 }
 
 fn pdf_height() -> io::Result<usize> {
@@ -1326,54 +1419,57 @@ impl Ansi {
 
     fn intro(&self) {
         let uelaur = [
-            ' ', ' ', 'A', 'u', 't', 'h', 'o', 'r', ':', ' ', 'A', 'h', 'm', 'e', 'd', ' ', 'A',
-            'l', 'a', 'a', ' ', 'G', 'o', 'm', 'a', 'a', ' ', 'M', 'o', 'h', 'a', 'm', 'm', 'e',
-            'd', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▄', '▄', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█', '█',
-            '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', 'A', 'u', 't', 'h', 'o', 'r', 's', ':', ' ', 'A', 'h', 'm', 'e', 'd', ' ',
+            'A', 'l', 'a', 'a', ' ', 'G', 'o', 'm', 'a', 'a', ' ', 'M', 'o', 'h', 'a', 'm', 'm',
+            'e', 'd', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '&', ' ', 'K', 'e', 'v', 'i',
+            'n', ' ', 'C', 'h', 'e', 'r', 'i', 'f', ' ', 'N', 'a', 'b', 'i', 'l', ' ', 'A', 'b',
+            'd', 'e', 'l', 'r', 'a', 'h', 'm', 'a', 'n', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            '▄', '▄', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', ' ',
-            '▄', '▄', '█', '▀', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', '▄', '█', '▀',
-            '█', '█', '▄', ' ', '▀', '█', '█', '█', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', '▀',
-            '█', '█', '█', '▄', '█', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
-            '█', '█', ' ', ' ', '▄', '█', '▀', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', ' ',
-            ' ', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
-            '█', '█', ' ', ' ', ' ', ' ', '█', '█', '▀', ' ', '▀', '▀', ' ', ' ', ' ', ' ', '█',
-            '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', '▀', '▀', '▀', '▀', '▀', '▀',
-            ' ', ' ', '█', '█', ' ', ' ', ' ', '▄', '█', '█', '█', '█', '█', ' ', ' ', ' ', '█',
-            '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█', '▄',
-            ' ', ' ', ' ', ' ', '▄', ' ', ' ', '█', '█', ' ', ' ', '█', '█', ' ', ' ', ' ', '█',
-            '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█',
-            '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█', '█', '█', '█', '▀', '█', '█',
-            '█', '▄', ' ', '▀', '█', '█', '█', '█', '█', '▀', '▄', '█', '█', '█', '█', '▄', ' ',
-            '█', '█', '█', '█', '▀', '█', '█', '▄', ' ', '▀', '█', '█', '█', '█', '▀', '█', '█',
-            '█', ' ', '▄', '█', '█', '█', '█', '▄', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█', '█', '█', ' ', ' ', '▀',
+            '█', '█', '█', ' ', ' ', ' ', '▄', '▄', '█', '▀', '█', '▄', ' ', ' ', ' ', '█', '█',
+            ' ', ' ', ' ', '▄', '█', '▀', '█', '█', '▄', ' ', '▀', '█', '█', '█', ' ', ' ', '▀',
+            '█', '█', '█', ' ', ' ', '▀', '█', '█', '█', '▄', '▄', '█', '▄', ' ', ' ', ' ', ' ',
+            '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '▄', '█', '▀', ' ', ' ', ' ', ' ',
+            '█', ' ', ' ', '█', '█', ' ', ' ', '█', '▀', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ',
+            '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', '▀', ' ', ' ',
+            '▀', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', '█', '█',
+            '▀', '▀', '▀', '▀', '▀', '▀', ' ', ' ', '█', '█', ' ', ' ', ' ', '▄', '█', '█', '█',
+            '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ',
+            '█', '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', '█', '█', '▄', ' ', ' ', ' ', ' ', '▄', ' ', ' ', '█', '█', ' ', ' ',
+            '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', '█',
+            '█', ' ', ' ', ' ', ' ', '█', '█', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '▀', '█',
+            '█', '█', '█', '▀', '█', '█', '█', '▄', ' ', '▀', '█', '█', '█', '█', '█', '▀', '▄',
+            '█', '█', '█', '█', '▄', ' ', '▀', '█', '█', '█', '▀', '█', '█', '▄', ' ', '▀', '█',
+            '█', '█', '█', '▀', '█', '█', '█', ' ', '▄', '█', '█', '█', '█', '▄', ' ', ' ',
         ];
         if self.no_ansi {
-            println!("\n UEL_AU\n")
+            println!("\n UELAUR\n")
         } else {
-            for _ in 0..10 {
+            for _ in 0..11 {
                 println!();
             }
             print!("\n\x1b[10A  ");
             for i in 1..56 {
-                for j in 0..9 {
+                for j in 0..10 {
                     print!("{}\x1b[1B\x1b[1D", uelaur[i + 56 * j]);
                     std::io::stdout().flush().ok();
                     thread::sleep(time::Duration::new(0, 6_000_000));
                 }
-                print!("\n\x1b[10A\x1b[{}C", i + 1);
+                print!("\n\x1b[11A\x1b[{}C", i + 1);
                 thread::sleep(time::Duration::new(0, 10_000_000));
             }
-            for _ in 0..10 {
+            for _ in 0..12 {
                 println!();
             }
         }
