@@ -3,7 +3,7 @@
 uelaur for short
 
 ## Discription
-this is a tool I created for filling the uel paper automation,\
+this is a tool I created for filling the uel paper programmatically,\
 it's simply a wrapper around [leafedit](https://github.com/navyleaf/leafedit)
 > ### leafedit
 > is a command line pdf editor that I wrote for my interest in the
